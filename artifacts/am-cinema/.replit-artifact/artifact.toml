@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Am Cinema"
+version = "1.0.0"
+id = "artifacts/am-cinema"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25601
+
+[services.development]
+run = "pnpm --filter @workspace/am-cinema run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/am-cinema", "run", "build" ]
+publicDir = "artifacts/am-cinema/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25601"
+BASE_PATH = "/"
