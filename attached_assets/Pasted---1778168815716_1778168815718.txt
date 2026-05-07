@@ -1,0 +1,45 @@
+طيب اول شي في مشاكل في صفحة الادمن حلها وايضا في ازرار لا تعمل صلحها وتاكد من ان كل الازرار تعمل ب شكل جيد  قم ب تعديل وتحسين الصفحه ب الكامل لك كامل الصلاحية  ب اضافة مميزات او اي تعديل 
+ثاني شي انا اضفت نظام ترجمه جديد كليا وهو يبحث عن الترجمه للافلام فقط حاليا  
+المشاكل الي اوجهها في هذا النظام حاليا هو انه ما يحصل  او ما يعثثر  دائما على ترجمات هذا بسبب نظام معين انه يبحث اولا عن ترجمات موثقه (اللون الاخضر ) اذا ما لقى يستخدم كلمات مفتاحيه
+لذا قررت اني ازيد    او اعدل الكلمات المفتاحيه ل يصبحو ك التالي 
+(DawoodTv, Elzayady, Islam El-Gezawy, Anis Mansour, Netflix, 🅽🅴🆃🅵🅻🅸🆇, CimaNow, Amazon Prime, iTunes, EgyBest, الأصلية, الاصليه, اصليه, النهائية, الرسمية, BluRay)(DawoodTv, Elzayady, Islam El-Gezawy, Anis Mansour, Netflix, 🅽🅴🆃🅵🅻🅸🆇, CimaNow, Amazon Prime, iTunes, EgyBest, الأصلية, الاصليه, اصليه, النهائية, الرسمية, BluRay)
+اخيرا الترجمه لاتظهر على المشغل لذا الافضل لنا ان نضيفها على المشغل مباشره ل تصبح من ضمن المشغل اذا استطعت ان لم تستطع فعل ذلك ف قم تعديلاتك الخاص لتصبح الترجمه تعمل تماما مع المشغل مع التاكد من تطابق التوقيت والترجمه واذا المستخدم قام ب ايقاف المشغل تتوقف معه الترجمه 
+ايضا اريد ان اقوم ب تعديل في الصفحة الرئيسيه اريدك ان تضيف ترحيب في اسم المستخدم وماذا تحب ان تشاهد اليوم 
+ايضا ان استطعت ان تجعل نظام الترجمه يعمل كذلك على  المسلسلات قم ب فعل ذلك ولكن اياك ان يخرب النظام الخاص  ب الافلام 
+اخيرا  قم ب فصل الافلام والمسلسلات عن بعض وقم ب انهاء عشوائية اختيار الافلام والمسلاسلات في الفئات  والمجموعات عن طريق هذا الap i 
+themoviedb api = c2e22bfce33e878dc66b0e332749c8d1 
+شرح كامل Task: Implement a Hybrid Media Discovery System & Integrated Subtitle Engine.
+
+1. Architectural Goal: Transition the discovery logic to TMDB API for precise categorization while maintaining OMDB API as the primary source for media metadata (Posters, Ratings, Details).
+
+2. Backend Implementation (Express/TypeScript):
+
+Path: artifacts/api-server/src/routes/media.ts
+Create a new endpoint GET /api/media/discover.
+Logic: This endpoint must accept categoryId, type (movie/tv), and filterType (genre/keyword).
+Use TMDB API discover/movie or discover/tv based on the request.
+Mapping: Use the imdb_id returned from TMDB to fetch the enriched data from OMDB API. This ensures our core data remains consistent with our existing database schema.
+3. Hybrid Category Definition:
+
+In artifacts/api-server/src/data/genres.ts, define a mixed array:
+
+Standard Genres: (e.g., Action ID: 28, Horror ID: 27) using TMDB 'with_genres' parameter.
+Micro-Categories (Keywords): (e.g., Superhero ID: 9715, Time Travel ID: 9840, Zombie ID: 12377) using TMDB 'with_keywords' parameter.
+Constraint: Ensure strict separation. Movies should NEVER appear in TV show categories and vice versa.
+4. Subtitle Tool Integration (Python Bridge):
+
+Setup a bridge to the Python scripts in the sub finder/ directory.
+In artifacts/api-server/src/routes/subtitles.ts, implement a child_process execution of main.py.
+Optimization: The Python script must receive the movie_name from the Express request and return a clean JSON string.
+Add pkgs.chromium and pkgs.chromedriver to replit.nix and ensure Selenium runs in --headless mode.
+5. Frontend Synchronization (React):
+
+Path: artifacts/am-cinema/src/pages/watch.tsx and movies.tsx.
+Update the fetching hooks to use the new /api/media/discover endpoint.
+Ensure all requests include language=ar-SA for localized titles.
+Integrate the subtitle selection UI in watch.tsx using the data fetched from the Python bridge.
+6. Critical Constraints:
+
+Do NOT overwrite existing database migrations or Drizzle schemas.
+Maintain the current OpenAPI specification in lib/api-spec/.
+Use the existing pnpm workspace structure for all package installations."
