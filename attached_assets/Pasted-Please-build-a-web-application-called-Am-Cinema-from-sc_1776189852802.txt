@@ -1,0 +1,85 @@
+Please build a web application called "Am Cinema" from scratch with the following features and functionality, ensuring all previous issues are addressed. The goal is to allow users to search for movies, TV shows, or episodes, retrieve their IMDB ID, and stream the content without ads, using both Vidsrc API and HTML5 Video Player for different use cases.
+
+Key Features & Requirements:
+1. Search Functionality:
+Search Bar: The user inputs the name of a movie, TV show, or episode.
+Search Process: The application will automatically search IMDB to find the movie/show and retrieve its IMDB ID.
+Use Web Scraping or a custom IMDB API (if available) to fetch the IMDB ID from IMDB search results.
+Extracting IMDB ID: The IMDB ID is found in the URL, e.g., tt0308506 for "Like Mike".
+The app should extract the IMDB ID from the search result URL.
+2. Video Fetching via Vidsrc API:
+Once the IMDB ID is obtained, use the Vidsrc API to fetch the embed URL for the movie, TV show, or episode.
+Vidsrc Embed API should be used to generate the video link:
+Example URL: https://vidsrcme.su/embed/movie?imdb=IMDB_ID&ds_lang=ar
+Where IMDB_ID is the ID of the movie or TV show (e.g., tt0308506).
+The video player should be displayed in an iframe within the app.
+Autoplay: The app should automatically enable autoplay by default when loading the video, but allow users to toggle it.
+Support for Subtitles: The user should be able to upload custom subtitles in .srt format and use it with the video.
+3. Subtitles Support:
+The app should allow users to upload subtitle files (in .srt format).
+Dynamic Subtitle Loading: When the user uploads a subtitle file, it should be loaded and displayed correctly using the sub_url parameter in the Vidsrc API.
+The user should also have the option to select the subtitle language (e.g., Arabic, English).
+4. User Interface (UI):
+Clean UI with a search bar at the top.
+After searching, display results like movie posters, titles, and brief descriptions.
+The video player should show up below with subtitles (if available) and autoplay features.
+File Upload for subtitles in .srt format (drag and drop or file input).
+5. Handling CORS Issues with Server-side Proxy:
+If Vidsrc API sends headers like X-Frame-Options or Content-Security-Policy that prevent embedding in iframe, a server-side proxy must be implemented to fetch the content, remove the restrictive headers, and send the content back to the client.
+Server-side Proxy:
+The backend server (e.g., using Node.js, Python Flask, etc.) should fetch the video from Vidsrc API.
+It will remove the X-Frame-Options and Content-Security-Policy headers from the response.
+The server will then send the cleaned content to the frontend, allowing the video to be embedded without restrictions.
+Frontend: Update the iframe to load the video through the proxy server:
+
+Example:
+
+<iframe src="https://yourserver.com/proxy?url=https://vidsrcme.su/embed/movie?imdb=tt0308506&ds_lang=ar" frameborder="0"></iframe>
+6. Proxy Server (Example in Node.js):
+Here’s how to set up the proxy server in Node.js:
+const express = require('express');
+const axios = require('axios');
+const app = express();
+
+// Endpoint for the server-side proxy
+app.get('/proxy', async (req, res) => {
+    const url = req.query.url;  // Get the movie/show URL from the request
+    try {
+        // Fetch content from Vidsrc
+        const response = await axios.get(url);
+        
+        // Remove restrictive headers
+        res.setHeader('X-Frame-Options', '');  // Remove X-Frame-Options
+        res.setHeader('Content-Security-Policy', '');  // Remove Content-Security-Policy
+
+        // Send the content back to the frontend
+        res.send(response.data);
+    } catch (error) {
+        res.status(500).send('Error fetching the video');
+    }
+});
+
+app.listen(3000, () => {
+    console.log('Proxy server running on http://localhost:3000');
+});
+Replace https://yourserver.com/proxy in the frontend with the actual address of your backend server.
+7. Testing:
+Test the search functionality by entering the name of a movie or TV show and ensuring the IMDB ID is retrieved correctly.
+Test the video embedding to ensure that the video is correctly displayed in the iframe with subtitles (if provided).
+Test the proxy server by trying to load a video directly via the backend server and ensuring it works without errors (e.g., CORS or embedding restrictions).
+8. Deployment:
+Frontend: Deploy the frontend on a hosting service (e.g., Netlify, Vercel, or Heroku).
+Backend: Deploy the server-side proxy on a backend platform (e.g., Heroku, AWS, DigitalOcean).
+9. Optional Features:
+Add Trending Section: Show the latest movies or TV shows using Vidsrc API's movies/latest or tvshows/latest endpoints.
+Add User Authentication: Allow users to save their favorite movies or shows for later viewing.
+Implement Feedback System: Allow users to rate or comment on movies and TV shows.
+Conclusion:
+
+You are required to build a fully functional "Am Cinema" web application with the following:
+
+Search functionality that gets movies/TV shows and retrieves the IMDB ID.
+Use Vidsrc API to embed video content in iframe.
+Handle subtitles support and allow custom .srt files to be uploaded.
+Ensure CORS issues are handled using a server-side proxy.
+Clean user interface with a simple flow for searching, playing video, and adding subtitles.
