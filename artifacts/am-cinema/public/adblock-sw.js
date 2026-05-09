@@ -1,0 +1,382 @@
+// Enawi Cinema — Advanced Ad Blocking Service Worker
+// Intercepts network requests and blocks known ad/tracker domains and patterns.
+
+const AD_DOMAINS = new Set([
+  // === Google Ads / Analytics ===
+  "doubleclick.net",
+  "googleadservices.com",
+  "googlesyndication.com",
+  "google-analytics.com",
+  "googletagmanager.com",
+  "googletagservices.com",
+  "adservice.google.com",
+  "pagead2.googlesyndication.com",
+  "ads.google.com",
+  "www.googletagmanager.com",
+  "analytics.google.com",
+  "www.google-analytics.com",
+  "ssl.google-analytics.com",
+  "stats.g.doubleclick.net",
+  // === Major Ad Networks ===
+  "adnxs.com",
+  "advertising.com",
+  "adtech.com",
+  "ads.yahoo.com",
+  "ads.twitter.com",
+  "ads.facebook.com",
+  "connect.facebook.net",
+  "graph.facebook.com",
+  "static.ads-twitter.com",
+  "ads.linkedin.com",
+  "s.amazon-adsystem.com",
+  "c.amazon-adsystem.com",
+  "aax.amazon-adsystem.com",
+  // === Streaming Site Ad Networks (High Priority) ===
+  "exoclick.com",
+  "exo.io",
+  "exoclick.net",
+  "juicyads.com",
+  "juicyads.net",
+  "trafficjunky.com",
+  "trafficjunky.net",
+  "traffichaus.com",
+  "ero-advertising.com",
+  "popads.net",
+  "popads.me",
+  "popcash.net",
+  "popcpm.com",
+  "popunder.net",
+  "propellerads.com",
+  "propellerads.net",
+  "clickadu.com",
+  "clickadu.net",
+  "adsterra.com",
+  "adsterra.net",
+  "hilltopads.net",
+  "hilltopads.com",
+  "adcash.com",
+  "adcash.net",
+  "admaven.com",
+  "admaven.net",
+  "revenuehits.com",
+  "monetizationking.com",
+  "clkmon.com",
+  "clksite.com",
+  "traffichunt.com",
+  "traffichunt.net",
+  "plugrush.com",
+  "plugrush.net",
+  "pushground.com",
+  "richpush.co",
+  "evadav.com",
+  "megapu.sh",
+  "push.house",
+  "push-land.com",
+  "pushpro.io",
+  "onclicka.com",
+  "onclickads.net",
+  "onclick.io",
+  "go2speed.org",
+  "rotatemymoney.com",
+  "adjacency.io",
+  "adskeeper.com",
+  "adskeeper.co.uk",
+  "bidvertiser.com",
+  "clicksor.com",
+  // === Trackers & Analytics ===
+  "scorecardresearch.com",
+  "quantserve.com",
+  "comscore.com",
+  "omtrdc.net",
+  "demdex.net",
+  "adsymptotic.com",
+  "openx.net",
+  "openx.com",
+  "pubmatic.com",
+  "rubiconproject.com",
+  "smartadserver.com",
+  "criteo.com",
+  "criteo.net",
+  "taboola.com",
+  "outbrain.com",
+  "revcontent.com",
+  "sharethrough.com",
+  "yieldmo.com",
+  "33across.com",
+  "districtm.ca",
+  "indexexchange.com",
+  "serverbid.com",
+  "sovrn.com",
+  "lijit.com",
+  "spotx.tv",
+  "spotxchange.com",
+  "undertone.com",
+  "yieldmanager.com",
+  "adf.ly",
+  "adfly.io",
+  "ad.fly",
+  "mgid.com",
+  "zergnet.com",
+  "disqusads.com",
+  "ads.disqus.com",
+  "linkbucks.com",
+  "shorte.st",
+  "adfoc.us",
+  "bc.vc",
+  "ouo.io",
+  "link-to.net",
+  "sh.st",
+  "content.ad",
+  // === Push Notification Ad Networks ===
+  "pushengagement.com",
+  "web-push.io",
+  "pushwoosh.com",
+  "onesignal.com",
+  "pushmonkey.com",
+  "pushassist.com",
+  "pushengage.com",
+  "notifly.com",
+  "notix.io",
+  "push.house",
+  "pushcrew.com",
+  "subscribers.com",
+  "sendpulse.com",
+  "gravitec.net",
+  "pushbots.com",
+  "beesender.com",
+  "cdn.onesignal.com",
+  "onesignal.com",
+  // === Cryptomining & Fingerprinting ===
+  "coinhive.com",
+  "coin-hive.com",
+  "jsecoin.com",
+  "monerominer.rocks",
+  "webmine.cz",
+  "minero.cc",
+  "cryptoloot.pro",
+  "authedmine.com",
+  "cdn.coinimple.com",
+  "crypto-loot.com",
+  "afrimanager.com",
+  "paperhive.net",
+  // === Streaming-Specific Trackers ===
+  "s.magsrv.com",
+  "magsrv.com",
+  "streamads.net",
+  "streamads.org",
+  "videoadex.com",
+  "vidoomy.com",
+  "vidoomy.net",
+  "cdn.vads.net",
+  "vads.net",
+  "ad-cdn.net",
+  "adserver.com",
+  "adserver.org",
+  "cdn-ads.net",
+  "serve-ads.com",
+  "banner-ads.com",
+  "streamsy.net",
+  "streamsy.com",
+  "streamrequests.net",
+  "staticads.net",
+  "adscdn.net",
+  "adtechserver.com",
+  "wideads.net",
+  "widereset.com",
+  "adstrack.net",
+  "adtrack.net",
+  "tr.adtrace.org",
+  "adtrace.org",
+  "logscdn.com",
+  "logstat.net",
+  "adcount.org",
+  "ad-count.com",
+  "impressionmedia.com",
+  "cacheblock.net",
+  "cdnads.net",
+  "popnew.net",
+  "adriver.ru",
+  "soloway.ru",
+  "adhigh.net",
+  "ad-maven.com",
+  "adhesehq.com",
+  "adhese.com",
+  "adpop.me",
+  "adsprofitmedia.com",
+  "effortlesssuccess.net",
+  "fun-streams.com",
+  "moonet.co",
+  "trackblt.io",
+  "reliablewebserve.net",
+  "p.p.ua",
+  "new-player.com",
+  "cdnfile.info",
+  "cdnfile.org",
+  "static.cdnfile.info",
+  "rotator.adjungle.com",
+  "adjungle.com",
+  "adjungle.net",
+  "lkqd.net",
+  "lkqd.com",
+  "adsafeprotected.com",
+  "doubleverify.com",
+  "integral-marketing.com",
+  "integralads.com",
+  "moatads.com",
+  "moat.com",
+  "adsafe.net",
+  "cobblesocial.com",
+  "medianet.com",
+  "media.net",
+  "contextweb.com",
+  "casalemedia.com",
+  "lijit.com",
+  "appnexus.com",
+  "imedia.cz",
+  "imobi.cz",
+  "serving-sys.com",
+  "sizmek.com",
+  "mediaplex.com",
+  "atdmt.com",
+  "yieldads.com",
+  "tidaltv.com",
+  "innovid.com",
+  "brightcove.com",
+  "freewheel.tv",
+  "fwmrm.net",
+  "yume.com",
+  "tremormedia.com",
+  "videology.com",
+  "videologygroup.com",
+  "brightmountainmedia.com",
+  "springserve.com",
+  "springserve.net",
+  "a-ads.com",
+  "a-ads.org",
+  "adbutler.com",
+  "adbutler.org",
+  "cdn77ads.net",
+  "emonster.com",
+  "flashtalking.com",
+  "mfadsrevenue.com",
+  "mads.com",
+  "yieldlove.com",
+  "eltoro.com",
+  "adtelligent.com",
+  "owneriq.net",
+  "owneriq.com",
+  "audienceiq.com",
+  "crackle-free.online",
+  "crack-ads.com",
+  "hdvid-codec.com",
+  "get-free.stream",
+  "moviespapa.one",
+]);
+
+const AD_URL_PATTERNS = [
+  /\/ads?\//i,
+  /\/advert/i,
+  /\/advertisement/i,
+  /\/banner/i,
+  /\/popup/i,
+  /\/popunder/i,
+  /\/tracker/i,
+  /\/tracking/i,
+  /\/analytics/i,
+  /\/pixel\//i,
+  /\/beacon\//i,
+  /\/telemetry/i,
+  /\/impression/i,
+  /\/click\?/i,
+  /\/clicktrack/i,
+  /\/adbanner/i,
+  /\/adscript/i,
+  /\/adframe/i,
+  /\/adspot/i,
+  /\/adzone/i,
+  /\/adsense/i,
+  /\/preroll/i,
+  /\/midroll/i,
+  /\/postroll/i,
+  /\/ad\.js/i,
+  /\/ads\.js/i,
+  /[?&]ad_id=/i,
+  /[?&]ad_unit=/i,
+  /[?&]adzone=/i,
+  /[?&]campaign_id=/i,
+  /[?&]adserver=/i,
+  /[?&]affid=/i,
+  /[?&]clickid=/i,
+  /[?&]subid=/i,
+  /[?&]pub_id=/i,
+  /[?&]affiliate=/i,
+  /\/pops\//i,
+  /\/popup\./i,
+  /\/pop\.js/i,
+  /\/popu?n?d?e?r?\.js/i,
+  /push-notification/i,
+  /subscribe.*push/i,
+];
+
+function shouldBlock(url) {
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname.toLowerCase();
+
+    // Check against domain blocklist (exact match or subdomain match)
+    for (const blocked of AD_DOMAINS) {
+      if (hostname === blocked || hostname.endsWith("." + blocked)) {
+        return true;
+      }
+    }
+
+    // Check URL patterns
+    const fullUrl = parsed.href;
+    for (const pattern of AD_URL_PATTERNS) {
+      if (pattern.test(fullUrl)) {
+        return true;
+      }
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(clients.claim());
+});
+
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+
+  if (request.method !== "GET") return;
+
+  try {
+    const url = new URL(request.url);
+    const swOrigin = self.location.origin;
+
+    // Never block our own origin (app resources, API calls)
+    if (url.origin === swOrigin) return;
+
+    // Never block navigations to our app
+    if (request.mode === "navigate" && url.origin === swOrigin) return;
+
+    if (shouldBlock(request.url)) {
+      event.respondWith(
+        new Response("", {
+          status: 200,
+          statusText: "Blocked by EnawiCinema AdBlock",
+          headers: { "Content-Type": "text/plain" },
+        })
+      );
+    }
+  } catch {
+    // If URL parsing fails, let the request through
+  }
+});

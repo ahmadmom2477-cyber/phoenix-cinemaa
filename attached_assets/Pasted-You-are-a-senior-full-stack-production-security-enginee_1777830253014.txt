@@ -1,0 +1,245 @@
+You are a senior full-stack production security engineer.
+
+This project is Phoenix Cinema. The main subscription and trial fixes are already implemented and working, but I need you to do a final production-hardening pass and fix all remaining risks before deployment on Render.
+
+Do not only give advice. Make the actual code changes.
+
+Current verified status:
+- The app runs without 502 errors.
+- Phoenix Cinema branding is displayed correctly.
+- Trial banner shows "متبقي 3 من 3 مشاهدات مجانية".
+- Trial state is fetched from /api/access/status.
+- Trial tracking is now server-side.
+- Subscribe button no longer manipulates localStorage.
+- /api/access/consume-play consumes a play server-side with a 30-second idempotency window.
+- Admin endpoints reject requests when the admin password env var is missing.
+- Admin endpoints use Authorization: Bearer <pass>.
+- ?pass= in admin URLs has been removed.
+- Downloads return 404 by default unless ENABLE_DOWNLOADS=true.
+- Admin panel URLs use window.location.origin.
+- Logs now use PhoenixCinema naming.
+- Switching embed sources creates a fresh session ID so provider switching does not accidentally burn a free play.
+
+Now fix and verify the remaining issues:
+
+1. Durable storage for trials and subscriptions
+- Check whether trial sessions and subscription sessions are stored only in server memory.
+- If they are in memory, replace this with durable storage.
+- Render restarts must not reset:
+  - free trial usage
+  - subscription sessions
+  - gift/access code usage
+  - active sessions
+- Use the simplest durable solution suitable for this project:
+  - PostgreSQL if DATABASE_URL exists or can be added
+  - SQLite if appropriate for simple deployment
+  - Redis only if already configured
+- Do not rely only on in-memory Maps or objects for production.
+- Keep memory storage only as a development fallback if needed.
+- Document the chosen storage method clearly.
+
+2. Admin password and admin session security
+- Rename old ENAWI_* environment variables to PHOENIX_* equivalents.
+- Replace ENAWI_ADMIN_PASS with PHOENIX_ADMIN_PASS or preferably PHOENIX_ADMIN_PASSWORD_HASH.
+- Keep backward compatibility only if necessary, but Phoenix variables must be the documented production standard.
+- Verify that the frontend does not store the raw admin password in localStorage, sessionStorage, cookies, or any browser storage.
+- If phoenix_admin_pass currently stores the raw password, replace it with:
+  - a short-lived admin session token, or
+  - a secure server-side admin session.
+- Do not expose the admin password in the frontend bundle.
+- Do not log the admin password.
+- Admin routes must fail closed if admin env variables are missing.
+- Use constant-time comparison or password hash verification.
+- Add rate limiting to all admin routes.
+- Return safe error messages without leaking whether the password exists.
+
+3. Secure cookies for production
+- Review all cookies used for trial/session/access.
+- In production, cookies must use:
+  - httpOnly: true
+  - secure: true
+  - sameSite: "lax" or "strict"
+- Set app.set("trust proxy", 1) for Render/production proxy support.
+- Make sure cookies work correctly behind Render’s HTTPS proxy.
+- Do not store sensitive data directly inside readable cookies.
+- Only store opaque IDs/tokens in cookies.
+
+4. CSRF protection or equivalent protection
+- Because trial sessions use cookies, protect state-changing routes.
+- Add CSRF protection or an equivalent safe mechanism for:
+  - POST /api/access/consume-play
+  - POST /api/subscription/activate
+  - admin routes
+  - gift/access code management routes
+  - any route that changes trial, subscription, or admin state
+- If using SameSite cookies as the primary protection, document why it is sufficient.
+- Prefer adding a CSRF token for state-changing cookie-based requests.
+- Make sure normal frontend usage still works.
+
+5. Free-play idempotency and abuse prevention
+- Audit the 30-second idempotency logic.
+- It must prevent accidental double-counting from:
+  - rapid clicks
+  - refreshes
+  - embed provider switching
+  - repeated requests caused by UI reloads
+- But it must NOT allow unlimited free playback by:
+  - generating unlimited playbackSessionIds
+  - switching providers repeatedly
+  - refreshing after the idempotency window
+  - calling APIs directly
+- The rule should be:
+  - A real new watch/play action consumes one free play if the user is not subscribed.
+  - Changing provider for the same movie/session should not accidentally consume another play.
+  - Starting a different movie or a genuinely new playback should consume another play.
+- Add server-side validation so the client cannot fake unlimited free sessions.
+- Add tests or manual verification steps for this behavior.
+
+6. Protect all sensitive backend routes
+- Re-audit every backend route.
+- Any route that returns or exposes protected playback data must require access.
+- Protected data includes:
+  - watch links
+  - iframe providers
+  - embed URLs
+  - media source URLs
+  - streaming providers
+  - download links
+  - subtitles tied to playback
+  - torrent links
+  - magnet links
+  - provider data
+  - anything that enables actual playback
+- Check routes such as:
+  - /api/media
+  - /api/watch
+  - /api/sources
+  - /api/stream
+  - /api/embed
+  - /api/providers
+  - /api/subtitles
+  - /api/downloads
+  - /api/torrent
+  - /api/magnet
+  - any aliases or nested routes
+- Public browsing/search routes are okay only if they do not expose playback/source/provider links.
+- Direct API calls must not bypass subscription or remaining free-play checks.
+
+7. Downloads, torrents, magnets, and legal-risk features
+- Keep ENABLE_DOWNLOADS=false by default.
+- Do not enable torrent, magnet, or download features for public production unless content is fully licensed.
+- If these features exist, keep them disabled by default or behind a disabled feature flag.
+- Do not improve piracy-related functionality.
+- Add or update LEGAL_NOTICE.md explaining that Phoenix Cinema production deployment must use licensed content only.
+- Make sure the UI does not advertise piracy, torrents, magnets, or illegal downloads.
+
+8. Secrets and private configuration
+- Search the entire repo for hardcoded secrets:
+  - API keys
+  - admin passwords
+  - subscription secrets
+  - tokens
+  - private URLs
+  - webhook URLs
+  - payment links
+  - private phone numbers
+  - provider keys
+- Move secrets to environment variables.
+- Important: do not store real secrets inside the frontend code or committed files.
+- Use .env only for local development, and make sure .env is ignored by Git.
+- Use Render Environment Variables for production.
+- Create/update .env.example with safe placeholder values only.
+- Confirm no real secrets are present in:
+  - source code
+  - .replit
+  - committed .env files
+  - README
+  - frontend bundle
+  - logs
+  - build output
+- If any secrets were previously exposed, list which ones must be rotated.
+
+9. Render production settings
+- Finalize Render deployment configuration.
+- Ensure the server binds to process.env.PORT.
+- Ensure build and start commands are correct.
+- Ensure production CORS is safe.
+- Do not use wildcard CORS in production unless absolutely required.
+- Use ALLOWED_ORIGINS or FRONTEND_URL.
+- Add helmet or equivalent security headers.
+- Add request body size limits.
+- Add safe logging without secrets.
+- Confirm /api/healthz works.
+- Remove Replit-only assumptions or hardcoded Replit URLs.
+- Document all final Render environment variables.
+
+10. Final build and verification
+Run and verify:
+- install
+- lint if available
+- typecheck if available
+- build
+- start
+
+Test these flows:
+1. New user has 3 free plays.
+2. /api/access/status returns correct trial state.
+3. First playback consumes one play.
+4. Subscribe button does not consume a play.
+5. User can go back from subscription overlay and use remaining free plays.
+6. Provider switching does not accidentally consume extra plays.
+7. User cannot generate unlimited free plays using new playbackSessionIds.
+8. Fourth playback without subscription is blocked.
+9. Clearing localStorage does not reset free plays.
+10. Restarting the server does not reset free plays or subscriptions.
+11. Valid subscription allows playback without consuming free plays.
+12. Invalid subscription token is rejected.
+13. Expired subscription token is rejected.
+14. Protected media/source routes without access return 402, 403, or 401.
+15. Admin route without credentials is denied.
+16. Admin route with missing admin env var is denied.
+17. Admin route with wrong credentials is denied.
+18. Admin route with correct credentials works.
+19. Admin password is not stored in browser storage.
+20. Cookies are secure in production.
+21. CSRF or equivalent protection exists for state-changing routes.
+22. Downloads stay disabled by default.
+23. No real secrets exist in committed files or frontend bundle.
+24. Build succeeds.
+25. App starts on process.env.PORT.
+
+Output required:
+After making changes, provide:
+- Summary of all changes made.
+- List of changed files.
+- Durable storage method used.
+- Database/schema changes if any.
+- Final environment variables for Render.
+- Which old ENAWI_* variables were replaced.
+- Admin security method.
+- Cookie security settings.
+- CSRF protection method.
+- Full list of protected routes.
+- Confirmation that free-play abuse is prevented.
+- Confirmation that localStorage does not control trial/subscription enforcement.
+- Confirmation that Render restarts do not reset trial/subscription state.
+- Remaining risks, if any.
+- Legal/content risks, if any.
+- Exact local commands.
+- Exact Render build command.
+- Exact Render start command.
+- Build/test results.
+
+Important rules:
+- Make actual code changes.
+- Do not only provide recommendations.
+- Do not store real secrets in committed app files.
+- Do not put real API keys in frontend code.
+- Do not rely on localStorage for access control.
+- Do not store raw admin password in browser storage.
+- Do not rely only on server memory for production sessions.
+- Do not enable downloads/torrents/magnets by default.
+- Do not break the 3-free-plays behavior.
+- Keep Phoenix Cinema branding everywhere.
+- Keep Arabic RTL working.
+- Prefer simple, secure, production-ready fixes.
