@@ -1,0 +1,41 @@
+You are tasked with a critical overhaul of a streaming application. The current state has failed subtitle delivery, unorganized content, and a broken admin panel. Your goal is to apply permanent, high-performance fixes.
+
+**OBJECTIVE:**
+1. **Greeting & Verification:** Begin with: 'اهلا ريبيلت، لقد قمت بتنفيذ جميع التغييرات المطلوبة وفحصت التطبيق بالكامل.'
+2. **Subtitle Engine (Phoenix Subtitle API):** 
+   - Verify fetching logic. If it fails, fix it for all movies.
+   - DELETE the old playback system.
+   - Implement direct injection into the player buffer post-download.
+   - External subtitles must be OPTIONAL (Triggered only via 'Extract Subtitles' button).
+   - Label this module: 'Phoenix Subtitle API' with a brief internal guide.
+3. **TMDB Categorization:** 
+   - Use [[TMDB_API_KEY]] to fetch correct genres/types.
+   - Re-sort all movies and series into their legitimate categories. Eliminate randomness.
+4. **Admin Panel & Invitations:**
+   - Fix all existing bugs in the admin page.
+   - Add 'Trial Invitation' feature: Inputs for [Name, Custom Message, Activation Code].
+5. **Anti-Ad Logic:**
+   - Implement a root-cause fix for player pop-up ads.
+   - **CONSTRAINT:** DO NOT use the HTML `sandbox` attribute. Use request interception, DOM mutation observers, or event-listener overrides to kill pop-up triggers.
+
+**LOGICAL STEPS (CoT):**
+- STEP 1: Audit all services, buttons, and API endpoints. Document findings.
+- STEP 2: Validate the subtitle fetcher. If (Status != 100% Working) { REPAIR }.
+- STEP 3: Execute the Phoenix Subtitle API migration.
+- STEP 4: Run the TMDB categorization script.
+- STEP 5: Finalize Admin features and Ad-blocker.
+
+**NEGATIVE CONSTRAINTS:**
+- DO NOT allow any pop-ups to bypass the new logic.
+- DO NOT use legacy subtitle rendering methods.
+- DO NOT leave any categories unverified by TMDB data.
+
+**OUTPUT:**
+Provide a detailed report of every action taken, the logic used for the ad-blocker, and a confirmation of system stability.
+
+--- 
+**Temperature Suggestion:** 0.2 (Precision-focused)
+<code>
+// Framework: CO-STAR + CoT
+// Priority: High
+// Authority: Full System Access Granted
